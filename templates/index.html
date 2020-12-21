@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>  
+<head>
+	<title>BL Modelling</title>
+	
+	<!-- initialization -->
+	<link rel="stylesheet"  href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	
+	<!-- meta for google lookup -->
+	<meta name="description" content="Word Suggestion with sentence completion and sentence correction">
+	<meta name="keywords" content="word suggestion, sentence completion, sentence correction, Bangla nlp">
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+	<script
+			  src="https://code.jquery.com/jquery-3.2.1.js"
+			  integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
+			  crossorigin="anonymous">
+	</script>
+
+	<!-- actions after pressing "correct" button -->
+	<script type="text/javascript">
+		var server = "http://127.0.0.1:5000";
+		var op_num = 0;
+		function update_var()
+		{
+			var x = document.getElementById("two").value;
+			op_num = x;
+		}
+
+		$( function() {
+			$( "#correct" ).click(function() {
+				// invoking 'correct' function from app.py
+				var appdir='/correct';
+				update_var();
+				$.ajax({
+					type: "POST",
+					url:server+appdir,
+					data: JSON.stringify(op_num),
+					dataType: 'json'
+				}).done(function(data) { 	// returns output and prints that on desired textarea
+					$('#two').val(data['data']);
+
+				});
+			});
+		});
+		
+</script>
+
+<!-- for text file upload -->
+<script type="text/JavaScript">
+	const fileSelector = document.getElementById('file-selector');
+	fileSelector.addEventListener('change', (event) => {
+	  const fileList = event.target.files;
+	  console.log(fileList);
+	});
+
+</script>
+
+<!-- actions after pressing "Download" button -->
+<script type="text/javascript">
+
+	var reader; //GLOBAL File Reader object for demo purpose only
+	/**
+     * Check for the various File API support.
+     */
+	 function checkFileAPI() {
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            reader = new FileReader();
+            return true; 
+        } else {
+            alert('The File APIs are not fully supported by your browser. Fallback required.');
+            return false;
+        }
+	}
+	/**
+     * read text input
+     */
+	function readText(filePath) {
+        var output = ""; //placeholder for text output
+        if(filePath.files && filePath.files[0]) {           
+            reader.onload = function (e) {
+                output = e.target.result;  //output contains the uploaded text file context
+                displayContents(output);
+            };//end onload()
+            reader.readAsText(filePath.files[0]);
+		}//end if html5 filelist support
+		else { //this is where you could fallback to Java Applet, Flash or similar
+            return false;
+        }       
+        return true;
+	}
+
+	/**
+     * display content using a basic HTML replacement
+     */
+	 function displayContents(txt) {
+		document.getElementById('two').value = "" + txt; 
+	} 	
+	
+</script>
+
+
+
+
+<script src="http://code.jquery.com/jquery-latest.min.js" type="text/javascript"></script>    
+
+<!-- css properties for real-time suggestion box appearance -->
+<script type="text/javascript">
+	
+    var properties = [
+    'boxSizing',
+    'width', // on Chrome and IE, exclude the scrollbar, so the mirror div wraps exactly as the textarea does
+    'height',
+    'overflowX',
+    'overflowY', // copy the scrollbar for IE
+
+    'borderTopWidth',
+    'borderRightWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
+
+    'paddingTop',
+    'paddingRight',
+    'paddingBottom',
+    'paddingLeft',
+
+    // https://developer.mozilla.org/en-US/docs/Web/CSS/font
+    'fontStyle',
+    'fontVariant',
+    'fontWeight',
+    'fontStretch',
+    'fontSize',
+    'lineHeight',
+    'fontFamily',
+
+    'textAlign',
+    'textTransform',
+    'textIndent',
+    'textDecoration', // might not make a difference, but better be safe
+
+    'letterSpacing',
+    'wordSpacing'
+    ];
+
+    var isFirefox = !(window.mozInnerScreenX == null);
+    var mirrorDiv, computed, style;
+
+    getCaretCoordinates = function(element, position) {
+      // mirrored div
+      mirrorDiv = document.getElementById(element.nodeName + '--mirror-div');
+      if (!mirrorDiv) {
+        mirrorDiv = document.createElement('div');
+        mirrorDiv.id = element.nodeName + '--mirror-div';
+        document.body.appendChild(mirrorDiv);
+      }
+
+      style = mirrorDiv.style;
+      computed = getComputedStyle(element);
+
+      // default textarea styles
+      style.whiteSpace = 'pre-wrap';
+      if (element.nodeName !== 'INPUT')
+        style.wordWrap = 'break-word'; // only for textarea-s
+
+      // position off-screen
+      style.position = 'absolute'; 
+      style.top = element.offsetTop + parseInt(computed.borderTopWidth) + 'px';
+      //style.left = "400px";
+      style.visibility = 'hidden'; 
+      // transfer the element's properties to the div
+      properties.forEach(function(prop) {
+        style[prop] = computed[prop];
+      });
+
+      if (isFirefox) {
+        style.width = parseInt(computed.width) - 2 + 'px';
+        if (element.scrollHeight > parseInt(computed.height))
+          style.overflowY = 'scroll';
+      } else {
+        style.overflow = 'hidden'; // for Chrome to not render a scrollbar; IE keeps overflowY = 'scroll'
+      }
+	//  text area contents assigning to mirrorDiv
+      mirrorDiv.textContent = element.value.substring(0, position);
+      
+
+      var span = document.createElement('span');
+      
+      span.textContent = element.value.substring(position) || '.'; 
+      span.style.backgroundColor = "lightgrey";
+      mirrorDiv.appendChild(span);
+
+      var coordinates = {
+        top: span.offsetTop + parseInt(computed['borderTopWidth']),
+        left: span.offsetLeft + parseInt(computed['borderLeftWidth'])
+      };
+
+      return coordinates;
+    }
+
+</script>
+
+
+<!-- actions after pressing 'space_bar' -->
+<script type="text/JavaScript">
+
+c=0; 
+flag=0; 
+last_keycode = 0;
+function keyPressed(keycode) {
+	var r1 = document.getElementById('one').value;
+    var r2 = r1.split(" ");
+    r2 = r2.filter(function(str) {
+    	return /\S/.test(str);
+		});
+	
+	if(keycode==32){  // space_bar keycode = 32
+
+		// whenever a sentence ends, the suggestion box won't appear
+		if (r2[r2.length-1].endsWith("?") == true || r2[r2.length-1].endsWith("!")  == true || r2[r2.length-1].endsWith("।")  == true) {
+				$('#popUpDiv').hide();
+				flag = 1;
+		}
+		if (r2[r2.length-2].endsWith("?")  == true || r2[r2.length-2].endsWith("!")  == true || r2[r2.length-2].endsWith("।") == true) {
+				$('#popUpDiv').hide();
+				flag = 1;
+		}
+		
+        if(r2.length>=2 && r2[r2.length-2].endsWith("?") != true && r2[r2.length-2].endsWith("!") != true && r2[r2.length-2].endsWith("।") != true){
+            c=c+1;
+		}
+		
+		$('#popUpDiv').hide();
+
+
+
+
+		// whenever a sentence ends, the suggestion box won't appear
+		if (r2[r2.length-1] == '?' || r2[r2.length-1] == '!' || r2[r2.length-1] == '।') {
+				$('#popUpDiv').hide();
+				flag = 1;
+		}
+		if (r2[r2.length-2] == '?' || r2[r2.length-2] == '!' || r2[r2.length-2] == '।') {
+				$('#popUpDiv').hide();
+				flag = 1;
+		}
+		
+        if(r2.length>=2 && r2[r2.length-2] != '?' && r2[r2.length-2] != '!' && r2[r2.length-2] != '।'){
+            c=c+1;
+		}
+		
+		$('#popUpDiv').hide();
+
+		
+
+
+		if(c>=1 && flag==0 && r2.length>=2){
+			$('#popUpDiv').hide();
+			// real-time suggestion box appearance 
+            $(document).ready(function(e){
+				['textarea'].forEach(function (selector) {
+
+      				var element = document.querySelector(selector);
+      
+      				var rect = document.createElement('div');  
+      				      
+      				['keypress'].forEach(function (event) {
+       					element.addEventListener(event, update);
+      				});
+      
+      				function update() {
+        				var coordinates = getCaretCoordinates(element, element.selectionEnd);
+        				console.log('(top, left) = (%s, %s)', coordinates.top, coordinates.left);
+        				rect.style.top = element.offsetTop + coordinates.top + 'px';
+        				rect.style.left = element.offsetLeft + coordinates.left + 'px';
+        				$("#popUpDiv").css({"top": rect.style.top,"left": rect.style.left ,"position": "absolute" });
+      				}
+    			});  
+
+			});
+				
+			var server = "http://127.0.0.1:5000";
+			var op_num = 0;
+			function update_var1()
+			{
+				op_num = r1;
+			}
+
+			$( function() {
+				// invoking 'predict' function from app.py
+				var appdir='/predict';
+				update_var1();
+				$.ajax({
+  					type: "POST",
+  					url:server+appdir,
+  					data: JSON.stringify(op_num),
+  					dataType: 'json'
+				}).done(function(data) { 
+						wl = data['data'];
+						// word suggestions output processing 
+						w2 = wl.replace(/"/g,'');
+						w3 = w2.replace(/]/g,'');
+						w4 = w3.replace('[','');
+						w5 = $.trim(w4);
+						var ar = w5.split(',');
+						ar[1]=ar[1].replace(/ /g,'');
+						ar[2]=ar[2].replace(/ /g,'');
+
+						// passing output values into the suggestion box 
+						document.getElementById("popupSelect").options[0].text = ar[0];
+						document.getElementById("popupSelect").options[1].text = ar[1];
+						document.getElementById("popupSelect").options[2].text = ar[2];
+
+						document.getElementById("popupSelect").options[0].value = ar[0];
+						document.getElementById("popupSelect").options[1].value = ar[1];
+						document.getElementById("popupSelect").options[2].value = ar[2];
+
+						wl = data['data2']
+						// sentence completion output processing
+						w2 = wl.replace(/"/g,'');
+                        // w3 = w2.replace(/।/g,' ।'); // changed
+                        // w3 = w3.replace(/!/g,' !'); 
+                        // w3 = w3.replace('?',' ?'); 
+						document.getElementById("popupSelect").value  = document.getElementById("popupSelect").options[0].value;
+						document.getElementById("popupSelect").options[3].value = w2;
+						document.getElementById("popupSelect").options[3].text = w2;
+					});
+				
+  			});
+
+			// displaying the desired results in web
+			$(document).ready(function(e){
+				$("#popUpDiv").show();
+					var a = document.getElementById("one").value;
+
+				// suggestion can be selected by pressing "enter" button
+				$("#popupSelect").keypress(function(e) {
+					if (event.keyCode === 13) {  // "enter" button's keycode = 13
+						var optSelect = $("option:selected", this);
+						var valSelect = this.value;
+										
+						var b = $("#popupSelect").val();
+						if (b == w2){  // if user selects the sentence as suggestion   // changed
+							var p1 = a.lastIndexOf("।");
+							var p2 = a.lastIndexOf("!");
+							var p3 = a.lastIndexOf("?");
+							var pos = Math.max(p1,p2,p3);
+							c1 = a.slice(0,pos+1);
+							document.getElementById("one").value = c1 +" " +  b;
+                            document.getElementById("one").focus();
+							$("#popUpDiv").hide(); 
+
+						}
+						else {
+							document.getElementById("one").value = a + " " +  b;
+                            document.getElementById("one").focus();
+							$("#popUpDiv").hide(); 
+						}
+					}
+                    else{
+                        document.getElementById("one").focus();
+                        $("#popUpDiv").hide(); 
+                    }
+				});
+				
+				
+				// suggestion can also be selected by clicking on it
+				$("#popupSelect").click(function(e) {
+						var optSelect = $("option:selected", this);
+						var valSelect = this.value;
+										
+						var b = $("#popupSelect").val();
+						if (b == w2){   // changed
+							
+							var p1 = a.lastIndexOf("।");
+							var p2 = a.lastIndexOf("!");
+							var p3 = a.lastIndexOf("?");
+							var pos = Math.max(p1,p2,p3);
+							c1 = a.slice(0,pos+1);
+							document.getElementById("one").value = c1 +" " +  b;
+                            document.getElementById("one").focus();
+							$("#popUpDiv").hide(); 
+
+						}
+						else {
+							document.getElementById("one").value = a + " " +  b;
+                            document.getElementById("one").focus();
+							$("#popUpDiv").hide(); 
+						}
+					});
+			 
+			 });
+             flag =1;
+		}
+		else {
+			c=c+1;
+            flag = 1;
+			$("#popUpDiv").hide(); 
+		} 
+		last_keycode = 32; 
+	}
+
+	else{
+        if(keycode == 40 && last_keycode == 32 && r2.length >=2){  // arrow key down keycode = 40
+
+			document.getElementById("popupSelect").focus(); 
+            $("#popUpDiv").show(); 
+            flag = 0;
+            last_keycode = 40;
+        }
+
+       
+        else{
+        	$("#popUpDiv").hide();
+        	last_keycode = keycode;
+            flag = 0; 
+        }
+	}
+}
+</script>
+
+	
+</head>
+
+
+<body style='text-align: center' onload="checkFileAPI();">
+
+
+	<header id="main-header">
+		<h1>BL Modelling</h1>
+		
+	</header>
+	<br> 
+
+	<div>
+		
+		<!--two main textareas -->
+  		<div>
+  			<textarea type="text" name="one" onKeyDown="javascript: var key = event.keyCode || event.charCode || event.which; keyPressed(key);" id="one" placeholder="Write here" required="required"></textarea> <br>
+  			<textarea type="text" id="two" name="two" placeholder="Copy here"></textarea>
+		</div>
+ 
+
+		<!-- correct button -->
+		<div>		
+			<button type="button" class="btn btn-primary" id="correct">Correct</button>
+			<button type="button" class="btn btn-primary" id="btn">Download</button>
+
+			<script type="text/javascript"> 
+
+				function download(file, text) { 
+						  
+					//creating an invisible element 
+					var element = document.createElement('a'); 
+					element.setAttribute('href',  
+					'data:text/plain;charset=utf-8, ' 
+					+ encodeURIComponent(text)); 
+					element.setAttribute('download', file); 
+				
+					// Above code is equivalent to 
+					// <a href="path of file" download="file name"> 
+				
+					document.body.appendChild(element);              
+					//onClick property temporary element
+					element.click(); 
+					document.body.removeChild(element); 
+				} 
+				
+				// Start file download. 
+				document.getElementById("btn") 
+				.addEventListener("click", function() { 
+					// Generate download of correct.txt  
+					// file with some content 
+					var text = document.getElementById("two").value; 
+					var filename = "corrected.txt"; 
+				
+					download(filename, text); 
+				}, false); 
+			</script> 
+			
+
+			<br>
+		</div>	
+
+		<br>
+		
+		<!-- for file upload -->
+		<div>
+			<input type="file" id="file-selector" accept=".txt" onchange='readText(this)' />
+		</div>
+		<br>
+		
+		<!-- suggestion box -->
+	    <div id="popUpDiv" value=" ">
+	    	<select autofocus id="popupSelect" size="4">
+	        	<option value="First" selected></option>
+	        	<option value="Second"></option>
+	       	    <option value="Third"></option>
+	       	    <option value="First Sentence"></option>
+	    	</select>
+  
+	   </div> 
+
+	</div>
+
+</body>
+</html>
